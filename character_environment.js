@@ -102,3 +102,172 @@ function game(){
     changeGameStatud(mario)
   }
 }  
+function startGame()
+{
+  GameStatus = "start";
+  document.getElementById("status").innerHTML = "Game Is Loading";
+}
+
+// change game status if any key is pressed
+function changeGameStatud(character){
+ if(noseX !="" && gameConfig.status==="start" && GameStatus=="start") { 
+   document.getElementById("status").innerHTML = "Game Is Loaded";
+   world_start.play();
+ initializeCharacterStatus(mario)
+    gameConfig.status= "play"
+  }
+  if(gameConfig.status==="gameover" && keyDown(control.revive)) {
+    gameConfig.status= "start"        
+  }
+}
+
+
+
+
+/*=====  End of Game Status   ======*/
+
+
+/*=============================================
+=                 Instialize                  =
+=============================================*/
+
+//initialize
+function instializeInSetup(character){
+	frameRate(120);
+	
+	character.scale=0.35;
+	initializeCharacterStatus(character)
+
+  bricks.displace(bricks);
+	platforms.displace(platforms);
+	coins.displace(coins);
+	coins.displace(platforms);
+	coins.collide(pipes);
+	coins.displace(bricks);		
+
+  // change the scale of clouds
+	clouds.forEach(function(element){
+		element.scale=random(1,2);
+	})
+}
+
+function initializeCharacterStatus(character){
+  // set up the initial config of character  
+  character.scale=0.35;
+  character["killing"]=0; //while is killing enemy
+  character["kills"]=0;
+  character["live"]=true;
+  character["liveNumber"]=gameConfig.initialLifes;
+  character["status"]='live';
+  character["coins"]=0;
+  character["dying"]=0;
+  character.position.x=gameConfig.startingPointX;
+  character.position.y=gameConfig.startingPointY;
+}
+
+function instializeInDraw(){
+  background(109,143,252);
+  
+  //while killing
+  if(mario.killing>0){
+    mario.killing-=1;
+  }else{
+    mario.killing=0;
+  }
+  
+  // make objects not overlap each other.
+  pipes.displace(pipes);
+  enemyMushrooms.displace(enemyMushrooms);
+  enemyMushrooms.collide(pipes);
+  clouds.displace(clouds);
+
+  // make character not overlap other objects
+  if(mario.live){
+    bricks.displace(mario);
+    pipes.displace(mario);
+    enemyMushrooms.displace(mario);
+    platforms.displace(mario);
+  }
+  
+  // character config initialize
+  mario["standOnObj"]=false;
+  mario.velocity.x=0;
+  mario.maxSpeed=20;
+
+}
+
+/*=====       End of Instialize        ======*/
+
+
+
+/*============================================
+=            Interactive Elements            =
+============================================*/
+
+// Character get coins
+function getCoins(coin,character){
+  if( character.overlap(coin) && character.live && coin.get==false){
+    character.coins+=1;
+    coin.get=true;
+    mario_coin.play();
+  };
+}
+    
+// Reappear coin after goin is got.
+function coinVanish(coin){
+  if(coin.get){
+    coin.position.x=random(50,gameConfig.screenX)+gameConfig.screenX;
+    coin.get=false;
+  };
+}
+
+/*=====  End of Interactive Elements  ======*/
+
+
+/*=============================================
+=    Main character setting and control       =
+=============================================*/
+
+/* Make main character standing on objs */
+function positionOfCharacter(character){
+  
+  // Not on the platform
+  if(character.live){
+    
+    // See if standing on bricks
+    platforms.forEach(function(element){ standOnObjs(character,element); });
+    bricks.forEach(function(element){ standOnObjs(character,element); });
+    pipes.forEach(function(element){ standOnObjs(character,element); });
+    
+    // Character affected by gravity
+    falling(character);
+
+    // If character can only jump if standing on the object
+    if(character.standOnObj) jumping(character);
+      
+  }
+
+  // Coins interaction event
+  coins.forEach(function(element){
+    getCoins(element,mario);
+    coinVanish(element);
+  });
+
+  // EnemyMushrooms interaction event
+  enemyMushrooms.forEach(function(element){
+    StepOnEnemy(character,element);
+    if((element.touching.left||element.touching.right)&&character.live&&character.killing===0) die(mario);
+    
+  })
+
+  // Make it stay in the screen
+  dontGetOutOfScreen(mario);
+
+}
+
+/* Auto moving character  */
+function autoControl(character){
+    character.velocity.x+=gameConfig.moveSpeed;
+    character.changeAnimation('move');
+    character.mirrorX(1);
+}
