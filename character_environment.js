@@ -271,3 +271,149 @@ function autoControl(character){
     character.changeAnimation('move');
     character.mirrorX(1);
 }
+function manualControl(character){
+  
+  if(character.live){
+    if(noseX < 300){
+      character.velocity.x-=gameConfig.moveSpeed;
+      character.changeAnimation('move');
+      character.mirrorX(-1);
+    }
+
+    if(noseX > 300){
+        character.velocity.x+=gameConfig.moveSpeed;
+      character.changeAnimation('move');
+      character.mirrorX(1);
+    }
+
+    if(!keyDown(control.left)&&!keyDown(control.right)&&!keyDown(control.up)){ 
+      character.changeAnimation('stand');
+    }
+  }
+ 
+}
+
+/* Movements of character */
+function jumping(character){
+	if( (noseY < 168  &&character.live) || (touchIsDown&&character.live) ){
+    character.velocity.y+=gameConfig.jump;
+    mario_jump.play();
+	}
+}
+
+
+/* Movements of character */
+function falling(character){
+	character.velocity.y += gameConfig.gravity;
+  character.changeAnimation('jump');
+}
+
+
+/* See if  obj1 stand on obj2, mainly for see if standing on the objcs*/
+function standOnObjs(obj1,obj2){
+  
+	var obj1_Left=leftSide(obj1);
+	var obj1_Right=rightSide(obj1);
+	var obj1_Up=upSide(obj1);
+	var obj1_Down=downSide(obj1);
+
+	var obj2_Left=leftSide(obj2);
+	var obj2_Right=rightSide(obj2);
+	var obj2_Up=upSide(obj2);
+	var obj2_Down=downSide(obj2);
+
+	if(obj1_Right>=obj2_Left&&obj1_Left<=obj2_Right && obj1_Down<=obj2_Up+7 && obj1_Down>=obj2_Up-7){
+		// println("YES");
+		obj1.velocity.y = 0;
+		obj1.position.y=obj2_Up-(obj1.height/2)-1;
+		obj1.standOnObj= true;
+	}
+}
+
+/* See if  obj1 step on obj2 to kill it*/
+function StepOnEnemy(obj1,obj2){
+  
+	var obj1_Left=leftSide(obj1);
+	var obj1_Right=rightSide(obj1);
+	var obj1_Up=upSide(obj1);
+	var obj1_Down=downSide(obj1);
+
+	var obj2_Left=leftSide(obj2);
+	var obj2_Right=rightSide(obj2);
+	var obj2_Up=upSide(obj2);
+	var obj2_Down=downSide(obj2);
+
+	if(obj1_Right>=obj2_Left&&obj1_Left<=obj2_Right && obj1_Down<=obj2_Up+7 && obj1_Down>=obj2_Up-7 && obj2.live==true && obj2.touching.top){
+		obj2.live=false;
+    obj1.killing=30;
+    obj1.kills++;
+    if(obj1.velocity.y>=gameConfig.jump*0.8){
+      obj1.velocity.y=gameConfig.jump*0.8;
+    }else{
+      obj1.velocity.y+=gameConfig.jump*0.8;
+    }
+    mario_kick.play();
+	}
+}
+
+
+// make character die if he touched by enemy
+function die(character){
+    character.live=false;
+    character.dying+=120;
+    character.liveNumber--;
+    character.status="dead";
+    character.changeAnimation('dead');
+    character.velocity.y-=2;
+    console.log("die - " + character.liveNumber);
+    if(character.liveNumber > 0)
+    {
+      mario_die.play();
+    }
+}
+
+// check character status and response to sprite and game status
+function checkStatus(character){    
+  if(character.live==false){
+    character.changeAnimation('dead');
+    character.dying-=1;
+    reviveAfterMusic(character);
+  }
+  if(character.live==false && character.liveNumber==0){
+    gameConfig.status="gameover";
+    mario_gameover.play();
+  }
+
+}
+
+// revive after dying music finished
+function reviveAfterMusic(character){
+  if( character.live === false && mario.liveNumber !==0 && character.dying===0 ){
+    character.live=true;
+    character.status="live";
+    character.position.x=500;
+    character.position.y=40;
+    character.velocity.y=0;
+  }
+}
+
+
+/* Make character stay in screen */
+function dontGetOutOfScreen(character){
+  
+  //if mario drop in the holes 
+  if(character.position.y>gameConfig.screenY&&character.live && character==mario){
+    die(mario);
+  }
+
+  if(character.position.x>gameConfig.screenX-(character.width*0.5)){
+  	character.position.x=gameConfig.screenX-(character.width*0.5);
+  }else if(character.position.x<character.width*0.5){
+    if(character==mario){
+      character.position.x=character.width*0.5;
+    }else{ 
+      character.live=false; 
+    }
+  }
+
+}
