@@ -417,3 +417,192 @@ function dontGetOutOfScreen(character){
   }
 
 }
+function enemys(enemys){
+    enemys.forEach(function(enemy){
+      stateOfEnemy(enemy);
+	    positionOfEnemy(enemy);
+	    enemy.position.x-=gameConfig.enemyMoveSpeed;
+  });
+} 
+
+// Check enemy status
+function stateOfEnemy(enemy){
+  if (enemy.live==false||enemy.position.y>gameConfig.screenY+50){
+    enemy.position.x=random(gameConfig.screenX*1.5,2*gameConfig.screenX+50);
+    enemy.position.y=random(gameConfig.screenY*0.35,gameConfig.screenY*0.75);
+    enemy.live=true;
+  }
+}
+
+/* Make enemy standing on objs */
+function positionOfEnemy(enemy){
+
+	platforms.forEach(function(element){ enemyStandOnObjs(enemy, element); });
+	bricks.forEach(function(element){ enemyStandOnObjs(enemy, element);});
+  pipes.forEach(function(element){ enemyStandOnObjs(enemy, element); })
+	
+	enemy.position.y+=gameConfig.gravityEnemy;
+
+	dontGetOutOfScreen(enemy);
+}
+
+
+/* See if  obj1 stand on obj2, mainly for see if standing on the objcs*/
+function enemyStandOnObjs(obj1,obj2){
+  
+  var obj1_Left=leftSide(obj1);
+  var obj1_Right=rightSide(obj1);
+  var obj1_Up=upSide(obj1);
+  var obj1_Down=downSide(obj1);
+
+  var obj2_Left=leftSide(obj2);
+  var obj2_Right=rightSide(obj2);
+  var obj2_Up=upSide(obj2);
+  var obj2_Down=downSide(obj2);
+
+  if(obj1_Right>=obj2_Left&&obj1_Left<=obj2_Right && obj1_Down<=obj2_Up+7 && obj1_Down>=obj2_Up-7){
+    // println("YES");
+    obj1.velocity.y = 0;
+    obj1.position.y=obj2_Up-(obj1.height);
+  }
+}
+
+
+
+/*=====  End of enemy setting and control ======*/
+
+
+/*===================================
+=            Environment            =
+===================================*/
+
+// call all environment scroll functions 
+function moveEnvironment(character){
+  var environmentScrollingSpeed=gameConfig.moveSpeed*0.3; 
+  
+  if(gameConfig.status==='play'){
+    environmentScrolling(platforms,environmentScrollingSpeed);
+    environmentScrolling(bricks,environmentScrollingSpeed);
+    environmentScrolling(clouds,environmentScrollingSpeed*0.5);
+    environmentScrolling(mountains,environmentScrollingSpeed*1.3); 
+    environmentScrolling(pipes,environmentScrollingSpeed); 
+    environmentScrolling(coins,environmentScrollingSpeed); 
+    environmentScrolling(enemyMushrooms,environmentScrollingSpeed); 
+    character.position.x-=environmentScrollingSpeed;
+  }
+}
+
+// scroll different element in the screen
+function environmentScrolling(group,environmentScrollingSpeed){
+  group.forEach(function(element){
+    if(element.position.x>-50){
+      element.position.x-=environmentScrollingSpeed;
+    }else{
+      element.position.x=gameConfig.screenX+50;
+      
+      //if group is bricks, randomize its y position
+      if(group===bricks){
+        element.position.y=random(gameConfig.screenY*0.35,gameConfig.screenY*0.75);
+      }
+
+      //if group is bricks or mountains, randomize its x position
+      if(group===pipes||group===mountains){
+        element.position.x=random(50,gameConfig.screenX)+gameConfig.screenX;
+      }
+
+      //if group is clouds, randomize its x & y position
+      if(group===clouds){
+        element.position.x=random(50,gameConfig.screenX)+gameConfig.screenX;
+        element.position.y=random(0,gameConfig.screenY*0.5);
+        element.scale=random(0.3,1.5);
+      }
+
+      if(group===coins){
+        element.position.x=random(0,gameConfig.screenX)+gameConfig.screenX;
+        element.position.y=random(gameConfig.screenY*0.2,gameConfig.screenY*0.8);
+      }
+
+    }
+
+  })
+}
+
+/*=====  End of Environment  ======*/
+
+
+/*=====================================
+=            For Debugging            =
+=====================================*/
+
+/* for position state of character */
+function debugging(character){
+	strokeWeight(1);
+	fill(255);
+	textSize(12);
+  text(character.dying, 20,20);
+	text(gameConfig.status, 20,80);
+	// text("v: "+character.velocity.y,150,20);
+	noFill();
+	// outline(tube01);
+	stroke(251);
+	strokeWeight(2);
+	outline(character);
+
+	pipes.forEach(function(element){ outline(element); });
+  enemyMushrooms.forEach(function(element){ outline(element); });
+
+}
+
+
+// calculate scores of every game
+function scores(character){
+
+  strokeWeight(0);
+  fill(255, 255, 255, 71);
+  textSize(40);
+
+  gameConfig.scores=character.coins+character.kills+gameConfig.timeScores;
+
+
+  if(character.live&&gameConfig.status==='play') gameConfig.timeScores+=0.05;
+  
+  text("scores: "+round(gameConfig.scores),20,40);
+  text("lives: "+character.liveNumber,20,80);
+
+  if(mario.live==false && mario.liveNumber!=0){
+    fill(0,0,0,150);
+    rect(0,0,gameConfig.screenX,gameConfig.screenY);
+    
+    strokeWeight(7);
+    noFill();
+    
+    stroke(255);
+    ellipse(gameConfig.screenX/2,gameConfig.screenY/2-30,150,150)
+
+    stroke("red");
+    var ratio=(character.liveNumber/gameConfig.initialLifes);
+    arc(gameConfig.screenX/2,gameConfig.screenY/2-30,150,150, PI+HALF_PI,(PI+HALF_PI)+(TWO_PI*ratio));
+    fill(255, 255, 255);
+    noStroke();
+    textAlign(CENTER);
+    textSize(40);
+    text(round(character.liveNumber),gameConfig.screenX/2,gameConfig.screenY/2-35);
+    text("lives",gameConfig.screenX/2,gameConfig.screenY/2);
+
+    
+  }
+
+
+}
+
+/* make outline of obj*/
+function outline(obj){ rect(leftSide(obj),upSide(obj),rightSide(obj)-leftSide(obj),downSide(obj)-upSide(obj));}
+
+/* get each side position of obj*/
+function leftSide(obj){ return obj.position.x-(obj.width/2);}
+function rightSide(obj){ return obj.position.x+(obj.width/2);}
+function upSide(obj){ return obj.position.y-(obj.height/2);}
+function downSide(obj){ return obj.position.y+(obj.height/2);}
+
+/*=====  End of For Debugging  ======*/
+
